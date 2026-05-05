@@ -46,6 +46,8 @@ class MeshPacket:
         self.rssiAtN = [0 for _ in range(self.conf.NR_NODES)]
         self.sensedByN = [False for _ in range(self.conf.NR_NODES)]
         self.detectedByN = [False for _ in range(self.conf.NR_NODES)]
+        self.sensed_node_ids = []
+        self.detected_node_ids = []
         self.collidedAtN = [False for _ in range(self.conf.NR_NODES)]
         self.collisionReasonAtN = [None for _ in range(self.conf.NR_NODES)]
         self.receivedAtN = [False for _ in range(self.conf.NR_NODES)]
@@ -84,6 +86,7 @@ class MeshPacket:
         detection, sensitivity, and empirical PHY loss must be recalculated
         before collision handling.
         """
+        self.detected_node_ids = []
         for rx_node in self.nodes:
             if rx_node.nodeid == self.txNodeId:
                 continue
@@ -99,6 +102,8 @@ class MeshPacket:
             self.LplAtN[rx_node.nodeid] = budget.calibrated_path_loss_db
             self.rssiAtN[rx_node.nodeid] = budget.rssi_dbm
             self.detectedByN[rx_node.nodeid] = self.rssiAtN[rx_node.nodeid] >= self.conf.current_preset["cad_threshold"]
+            if self.detectedByN[rx_node.nodeid]:
+                self.detected_node_ids.append(rx_node.nodeid)
         self.refresh_phy_reception()
 
     def airtime_for_cr(self, cr):
@@ -131,11 +136,14 @@ class MeshPacket:
         coding rates improve payload decode probability near that edge, but they
         do not resurrect packets whose preamble/header would not be heard.
         """
+        self.sensed_node_ids = []
         for rx_node_id, rssi in enumerate(self.rssiAtN):
             if rx_node_id == self.txNodeId:
                 continue
 
             self.sensedByN[rx_node_id] = rssi >= self.conf.current_preset["sensitivity"]
+            if self.sensedByN[rx_node_id]:
+                self.sensed_node_ids.append(rx_node_id)
             self.phyLostAtN[rx_node_id] = False
 
             if self.sensedByN[rx_node_id]:
