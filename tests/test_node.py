@@ -63,6 +63,14 @@ class TestNodeConfigYaml(unittest.TestCase):
         self.assertEqual([cfg.node_id for cfg in configs], [0, 1])
         self.assertEqual([cfg.position.x for cfg in configs], [10, 20])
 
+    def test_node_yaml_can_set_per_node_tx_power(self):
+        raw_node = sample_node(10)
+        raw_node["txPowerDbm"] = 20
+
+        configs = node_configs_from_yaml({0: raw_node}, 1000)
+
+        self.assertEqual(configs[0].tx_power_dbm, 20)
+
     def test_wrapped_node_map_origin_is_available_for_terrain(self):
         raw = {
             "origin": {"lat": 41.64, "lon": 41.62},
@@ -160,6 +168,16 @@ class TestMeshNodeRandomness(unittest.TestCase):
 
         self.assertEqual(first, same_seed)
         self.assertNotEqual(first, different_seed)
+
+    def test_node_uses_configured_tx_power_when_present(self):
+        conf = Config()
+        conf.NR_NODES = 1
+        env = simpy.Environment()
+        node_config = NodeConfig(7, Point(0, 0, 1.5), conf.PERIOD, tx_power_dbm=20)
+
+        node = MeshNode(conf, SimulationState(conf, env), SimulationDataTracking(), node_config)
+
+        self.assertEqual(node.txPower, 20)
 
 
 if __name__ == "__main__":

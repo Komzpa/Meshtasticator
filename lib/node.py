@@ -58,7 +58,19 @@ class MeshNodeStats:
 class NodeConfig:
     """Specific configuration for a node
     """
-    def __init__(self, node_id: int, position: Point, period: int, role: MESHTASTIC_ROLE = MESHTASTIC_ROLE.CLIENT, antenna_gain: float = 0, hop_limit: int = 3, neighbor_info: bool = False, antenna_height=None, absolute_altitude=None):
+    def __init__(
+        self,
+        node_id: int,
+        position: Point,
+        period: int,
+        role: MESHTASTIC_ROLE = MESHTASTIC_ROLE.CLIENT,
+        antenna_gain: float = 0,
+        hop_limit: int = 3,
+        neighbor_info: bool = False,
+        antenna_height=None,
+        absolute_altitude=None,
+        tx_power_dbm=None,
+    ):
         self.node_id = node_id
         self.position = position.copy() # make sure we keep our own point
         self.period = period
@@ -68,6 +80,7 @@ class NodeConfig:
         self.neighbor_info = neighbor_info
         self.antenna_height = position.z if antenna_height is None else antenna_height
         self.absolute_altitude = absolute_altitude
+        self.tx_power_dbm = tx_power_dbm
 
     @classmethod
     def from_gen_scenario_output(cls, node_id: int, node_dict: {}, period: int):
@@ -103,7 +116,19 @@ class NodeConfig:
 
         antenna_height = nd.get("antennaHeight", nd["z"])
         absolute_altitude = nd.get("absoluteAltitude")
-        return NodeConfig(node_id, position, period, role, nd['antennaGain'], nd['hopLimit'], nd['neighborInfo'], antenna_height, absolute_altitude)
+        tx_power_dbm = nd.get("txPowerDbm", nd.get("ptx"))
+        return NodeConfig(
+            node_id,
+            position,
+            period,
+            role,
+            nd['antennaGain'],
+            nd['hopLimit'],
+            nd['neighborInfo'],
+            antenna_height,
+            absolute_altitude,
+            tx_power_dbm,
+        )
 
 
 def node_configs_from_yaml(raw_config, period: int) -> list[NodeConfig]:
@@ -188,6 +213,7 @@ class MeshNode:
         self.antennaGain = nodeConfig.antenna_gain
         self.antennaHeight = nodeConfig.antenna_height
         self.absolute_altitude = nodeConfig.absolute_altitude
+        self.txPower = self.conf.PTX if nodeConfig.tx_power_dbm is None else int(nodeConfig.tx_power_dbm)
         self.period = nodeConfig.period
 
         self.my_stats = MeshNodeStats(self.nodeid)

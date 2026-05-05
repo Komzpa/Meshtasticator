@@ -175,6 +175,15 @@ class TestDynamicTxPowerPacketPhysics(unittest.TestCase):
         self.assertFalse(packet.sensedByN[1])
         self.assertLess(packet.rssiAtN[1], conf.current_preset["sensitivity"])
 
+    def test_packet_base_power_comes_from_transmitting_node(self):
+        conf, nodes = self.make_nodes(100)
+        nodes[0].txPower = 20
+
+        packet = MeshPacket(conf, nodes, 0, NODENUM_BROADCAST, 0, 40, 1, 0, True, False, None, 0)
+
+        self.assertEqual(packet.baseTxPower, 20)
+        self.assertEqual(packet.txpow, 20)
+
 
 if __name__ == "__main__":
     unittest.main()
