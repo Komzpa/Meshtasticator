@@ -167,6 +167,7 @@ class MeshNode:
         self.hopLimit = nodeConfig.hop_limit
         self.antennaGain = nodeConfig.antenna_gain
         self.antennaHeight = nodeConfig.antenna_height
+        self.absolute_altitude = nodeConfig.absolute_altitude
         self.period = nodeConfig.period
 
         self.my_stats = MeshNodeStats(self.nodeid)
