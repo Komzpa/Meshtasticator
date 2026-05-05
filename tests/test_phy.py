@@ -1,7 +1,7 @@
 import unittest
 
-import lib.phy
 from lib.config import Config
+import lib.phy
 
 
 class TestPhy(unittest.TestCase):
@@ -38,6 +38,24 @@ class TestPhy(unittest.TestCase):
         at_floor = lib.phy.estimate_path_loss(conf, 780.0, conf.FREQ)
 
         self.assertAlmostEqual(below_floor, at_floor)
+
+    def test_estimate_path_loss_accepts_explicit_model(self):
+        conf = Config()
+        dist = 1500
+        freq = conf.FREQ
+
+        explicit = lib.phy.estimate_path_loss(conf, dist, freq, model=0)
+
+        self.assertEqual(conf.MODEL, 5, "explicit model must not mutate config")
+        conf.MODEL = 0
+        implicit = lib.phy.estimate_path_loss(conf, dist, freq)
+        self.assertAlmostEqual(explicit, implicit)
+
+    def test_estimate_path_loss_rejects_unsupported_model(self):
+        conf = Config()
+
+        with self.assertRaisesRegex(ValueError, "unsupported path loss model"):
+            lib.phy.estimate_path_loss(conf, 1500, conf.FREQ, model=99)
 
 
 if __name__ == '__main__':
