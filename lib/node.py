@@ -70,6 +70,7 @@ class NodeConfig:
         antenna_height=None,
         absolute_altitude=None,
         tx_power_dbm=None,
+        enclosure_loss_db=0.0,
     ):
         self.node_id = node_id
         self.position = position.copy() # make sure we keep our own point
@@ -81,9 +82,10 @@ class NodeConfig:
         self.antenna_height = position.z if antenna_height is None else antenna_height
         self.absolute_altitude = absolute_altitude
         self.tx_power_dbm = tx_power_dbm
+        self.enclosure_loss_db = enclosure_loss_db
 
     @classmethod
-    def from_gen_scenario_output(cls, node_id: int, node_dict: {}, period: int):
+    def from_gen_scenario_output(cls, node_id: int, node_dict: {}, period: int, use_node_periods: bool = False):
         """create NodeConfig from a node dict as returned from gen_scenario.
         You probably want to iterate over the keys that function gives you
         and pass individual values indexed by them to this method.
@@ -117,10 +119,12 @@ class NodeConfig:
         antenna_height = nd.get("antennaHeight", nd["z"])
         absolute_altitude = nd.get("absoluteAltitude")
         tx_power_dbm = nd.get("txPowerDbm", nd.get("ptx"))
+        node_period = nd.get("periodMs", period) if use_node_periods else period
+        enclosure_loss_db = nd.get("enclosureLossDb", nd.get("environmentalAttenuationDb", 0.0))
         return NodeConfig(
             node_id,
             position,
-            period,
+            node_period,
             role,
             nd['antennaGain'],
             nd['hopLimit'],
@@ -128,10 +132,11 @@ class NodeConfig:
             antenna_height,
             absolute_altitude,
             tx_power_dbm,
+            enclosure_loss_db,
         )
 
 
-def node_configs_from_yaml(raw_config, period: int) -> list[NodeConfig]:
+def node_configs_from_yaml(raw_config, period: int, use_node_periods: bool = False) -> list[NodeConfig]:
     """Convert saved node YAML into NodeConfig objects.
 
     The GUI writes a plain `{node_id: node_fields}` map. Real-mesh scenario
@@ -149,7 +154,7 @@ def node_configs_from_yaml(raw_config, period: int) -> list[NodeConfig]:
 
     configs = []
     for sim_node_id, node_dict in enumerate(node_map.values()):
-        configs.append(NodeConfig.from_gen_scenario_output(sim_node_id, node_dict, period))
+        configs.append(NodeConfig.from_gen_scenario_output(sim_node_id, node_dict, period, use_node_periods))
     return configs
 
 
@@ -214,6 +219,7 @@ class MeshNode:
         self.antennaHeight = nodeConfig.antenna_height
         self.absolute_altitude = nodeConfig.absolute_altitude
         self.txPower = self.conf.PTX if nodeConfig.tx_power_dbm is None else int(nodeConfig.tx_power_dbm)
+        self.enclosureLossDb = float(nodeConfig.enclosure_loss_db)
         self.period = nodeConfig.period
 
         self.my_stats = MeshNodeStats(self.nodeid)

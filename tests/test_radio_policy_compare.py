@@ -38,6 +38,15 @@ class TestRadioPolicyCompare(unittest.TestCase):
         self.assertNotIn("--dtp", lora_args)
         self.assertNotIn("--", lora_args)
 
+    def test_build_lora_args_can_select_firmware10359_policy(self):
+        args = radio_policy_compare.parse_args(["--policies", "firmware10359"])
+
+        lora_args = radio_policy_compare.build_lora_args(args, "firmware10359")
+
+        self.assertIn("--dcr", lora_args)
+        self.assertIn("--dcr-strategy", lora_args)
+        self.assertIn("firmware10359", lora_args)
+
     def test_summarize_results_formats_table_and_deltas(self):
         static = radio_policy_compare.summarize_results(
             "static",

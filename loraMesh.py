@@ -159,12 +159,14 @@ def parse_params(conf, args=None) -> [NodeConfig]:
     group.add_argument('--from-map', nargs='?', const=DEFAULT_MAP_NODES_URL, type=str, metavar='url', help='Fetch node locations from a Meshtastic map /api/v1/nodes endpoint.')
     group.add_argument('--from-nodedb', action='store_true', help='Fetch positioned nodes from a local Meshtastic device NodeDB.')
     group.add_argument('--preset', choices=available_presets(), help='Load a packaged real-mesh scenario preset.')
+    parser.add_argument('--use-node-periods', action='store_true', help='Respect per-node periodMs values from YAML/preset inputs instead of the scenario-wide period')
 
     # the earlier behavior of specifying `router_type` as an optional positional arg with `nr_nodes` is difficult to exactly
     # replicate with argparse, especially since nesting groups was an unintended feature and deprecated.
     # Just implement as an optional argument, and manually treat it as incompatible with `--from-file`
     parser.add_argument('--router-type', type=conf.ROUTER_TYPE, choices=conf.ROUTER_TYPE, help='Router type to use, taken from ROUTER_TYPE enum. Omit the leading "ROUTER_TYPE". Incompatible with --from-file')
     parser.add_argument('--dcr', action='store_true', help='Enable the Dynamic Coding Rate experiment')
+    parser.add_argument('--dcr-strategy', choices=['context', 'firmware10359'], default='context', help='DCR policy variant to run when --dcr is enabled')
     parser.add_argument('--dtp', action='store_true', help='Enable the Dynamic TX Power experiment')
     parser.add_argument('--dtp-max-drop-db', type=int, help='maximum per-packet TX power reduction for --dtp')
     parser.add_argument('--dtp-power-step-db', type=int, help='TX power quantization step for --dtp reductions')
@@ -301,13 +303,13 @@ def parse_params(conf, args=None) -> [NodeConfig]:
         try:
             with open(os.path.join("out", parsed_arguments.from_file), 'r', encoding="utf-8") as file:
                 raw_config = yaml.safe_load(file)
-            config = node_configs_from_yaml(raw_config, period)
+            config = node_configs_from_yaml(raw_config, period, parsed_arguments.use_node_periods)
             scenario_origin = origin_from_yaml(raw_config)
         except (OSError, ValueError, yaml.YAMLError) as err:
             parser.error(f"could not load --from-file YAML: {err}")
         nr_nodes = len(config)
     elif parsed_arguments.preset is not None:
-        config = load_preset_node_configs(parsed_arguments.preset, period)
+        config = load_preset_node_configs(parsed_arguments.preset, period, parsed_arguments.use_node_periods)
         scenario_origin = preset_origin(parsed_arguments.preset)
         set_geo_origin(conf, scenario_origin)
         apply_preset_radio_calibration(conf, parsed_arguments.preset)
@@ -383,7 +385,10 @@ def parse_params(conf, args=None) -> [NodeConfig]:
         from lib.gui import gen_scenario
 
         config_dict = gen_scenario(conf)
-        config = [NodeConfig.from_gen_scenario_output(node_id, cfg, period) for node_id, cfg in config_dict.items()]
+        config = [
+            NodeConfig.from_gen_scenario_output(node_id, cfg, period, parsed_arguments.use_node_periods)
+            for node_id, cfg in config_dict.items()
+        ]
         nr_nodes = len(config)
 
     if nr_nodes < 2:
@@ -434,6 +439,7 @@ def parse_params(conf, args=None) -> [NodeConfig]:
     conf.PLOT = plot_enabled
     conf.NR_NODES = nr_nodes
     conf.DCR_ENABLED = parsed_arguments.dcr
+    conf.DCR_STRATEGY = parsed_arguments.dcr_strategy
     conf.DTP_ENABLED = parsed_arguments.dtp
     if parsed_arguments.dtp_max_drop_db is not None:
         conf.DTP_MAX_POWER_DROP_DB = parsed_arguments.dtp_max_drop_db
