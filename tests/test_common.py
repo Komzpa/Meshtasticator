@@ -6,6 +6,25 @@ from lib.point import Point
 
 class TestCommonFunctions(unittest.TestCase):
 
+    def test_node_antenna_height_lookup_order_and_single_definition(self):
+        import pathlib
+        import types
+
+        pos = Point(0, 0, 7)
+        both = types.SimpleNamespace(antennaHeight=3, antenna_height=4, position=pos)
+        self.assertEqual(lib.common.node_antenna_height(both), 3)
+        only_snake = types.SimpleNamespace(antenna_height=4, position=pos)
+        self.assertEqual(lib.common.node_antenna_height(only_snake), 4)
+        self.assertEqual(lib.common.node_antenna_height(types.SimpleNamespace(position=pos)), 7)
+
+        root = pathlib.Path(lib.common.__file__).resolve().parent.parent
+        owners = [
+            str(path.relative_to(root))
+            for path in [*root.glob("*.py"), *root.glob("lib/*.py")]
+            if "def node_antenna_height" in path.read_text()
+        ]
+        self.assertEqual(owners, ["lib/common.py"])
+
     def test_calc_dist(self):
         message = "sanity-checking our euclidean distance calculation"
         # test some pythagorean triple triangles https://en.wikipedia.org/wiki/Pythagorean_triple

@@ -248,7 +248,9 @@ class TestSrtm(unittest.TestCase):
                 )
 
             self.assertFalse((cache_dir / "N41E041.hgt").exists())
-            self.assertFalse((cache_dir / "N41E041.hgt.tmp").exists())
+            self.assertEqual(
+                list(cache_dir.iterdir()) if cache_dir.exists() else [], []
+            )
 
     def test_ensure_hgt_tile_converts_truncated_gzip_to_value_error(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -270,7 +272,9 @@ class TestSrtm(unittest.TestCase):
                 )
 
             self.assertFalse((cache_dir / "N41E041.hgt").exists())
-            self.assertFalse((cache_dir / "N41E041.hgt.tmp").exists())
+            self.assertEqual(
+                list(cache_dir.iterdir()) if cache_dir.exists() else [], []
+            )
 
     def test_ensure_hgt_tile_does_not_cache_failed_direct_hgt_download(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -285,7 +289,9 @@ class TestSrtm(unittest.TestCase):
                     )
 
             self.assertFalse((cache_dir / "N41E041.hgt").exists())
-            self.assertFalse((cache_dir / "N41E041.hgt.tmp").exists())
+            self.assertEqual(
+                list(cache_dir.iterdir()) if cache_dir.exists() else [], []
+            )
 
 
 if __name__ == "__main__":

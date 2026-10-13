@@ -7,7 +7,11 @@ from lib.point import Point
 
 
 def node_antenna_height(node):
-    """Return antenna height above ground, falling back to legacy Point.z."""
+    """Return antenna height above ground, falling back to legacy Point.z.
+
+    This is the single definition for every module (terrain, packet, loraMesh):
+    MeshNode.antennaHeight wins over NodeConfig.antenna_height, then Point.z.
+    """
     return getattr(node, "antennaHeight", getattr(node, "antenna_height", node.position.z))
 
 def find_random_position(conf, node_configs) -> (float, float):

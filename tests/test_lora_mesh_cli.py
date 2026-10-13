@@ -713,8 +713,8 @@ class TestLoraMeshCli(unittest.TestCase):
         scenario = textwrap.dedent(
             """\
             origin:
-              latitude: 42.0
-              longitude: 42.0
+              lat: 42.0
+              lon: 42.0
             nodes:
               3944424993:
                 x: 0
