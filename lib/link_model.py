@@ -96,15 +96,18 @@ def calculate_link_budget(conf, tx_node, rx_node, offset_db=0.0, tx_power_dbm=No
 
     raw_path_loss = base_loss + terrain_loss + clutter_loss + offset_db
 
-    # Keep packet delivery and link-summary statistics on the same budget. The
-    # TX endpoint contributes radiated antenna gain, while the RX endpoint
-    # contributes receive antenna gain; terrain/clutter/calibration are path
-    # properties layered around those endpoint gains.
+    # Calibrate the path at the fixed reference power, then apply any
+    # per-packet TX power delta directly. Feeding a reduced power into the
+    # fitted raw_snr_clip feature would understate the reduction (the fitted
+    # coefficient compresses it), distorting DTP policy comparisons.
+    ref_power = conf.PTX
+    raw_rssi_ref = ref_power + _antenna_gain(tx_node) + _antenna_gain(rx_node) - raw_path_loss
+    raw_snr_ref = raw_rssi_ref - conf.NOISE_LEVEL
+    features = _link_calibration_features(conf, tx_point, rx_point, raw_snr_ref, terrain_loss, clutter_loss)
+    rssi_ref = apply_link_calibration(conf, raw_rssi_ref, features)
     tx_power = conf.PTX if tx_power_dbm is None else tx_power_dbm
+    rssi = rssi_ref + (tx_power - ref_power)
     raw_rssi = tx_power + _antenna_gain(tx_node) + _antenna_gain(rx_node) - raw_path_loss
-    raw_snr = raw_rssi - conf.NOISE_LEVEL
-    features = _link_calibration_features(conf, tx_point, rx_point, raw_snr, terrain_loss, clutter_loss)
-    rssi = apply_link_calibration(conf, raw_rssi, features)
 
     return LinkBudget(
         distance_m=distance_m,

@@ -117,6 +117,11 @@ class MeshPacket:
                     f"{self.now:.3f} skipping {self.txNodeId} -> {rx_node.nodeid} computation. "
                     f"connectivity map: {self.connectivity_map[self.txNodeId]}"
                 )
+                # A filtered-out link is nonexistent: keep its RSSI below
+                # sensitivity so refresh_phy_reception cannot mark it sensed
+                # from the stale init value of 0 dBm.
+                self.rssiAtN[rx_node.nodeid] = float("-inf")
+                self.detectedByN[rx_node.nodeid] = False
                 continue
             budget = calculate_link_budget(
                 self.conf,

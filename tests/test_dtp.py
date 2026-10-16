@@ -202,6 +202,55 @@ class TestDynamicTxPowerPacketPhysics(unittest.TestCase):
         self.assertFalse(packet.sensedByN[1])
         self.assertLess(packet.rssiAtN[1], conf.current_preset["sensitivity"])
 
+    def test_connectivity_filtered_receiver_stays_below_sensitivity(self):
+        conf, nodes = self.make_nodes(100_000)
+        conf.MOVEMENT_ENABLED = False
+        conf.ENABLE_CONNECTIVITY_MAP = True
+        packet = MeshPacket(
+            conf,
+            nodes,
+            0,
+            NODENUM_BROADCAST,
+            0,
+            40,
+            1,
+            0,
+            True,
+            False,
+            None,
+            0,
+            {0: set(), 1: set()},
+            [[None, None], [None, None]],
+        )
+
+        self.assertFalse(packet.sensedByN[1])
+        self.assertFalse(packet.detectedByN[1])
+        self.assertLess(packet.rssiAtN[1], conf.current_preset["sensitivity"])
+
+    def test_tx_power_delta_applies_outside_calibration(self):
+        conf, nodes = self.make_nodes(2_000)
+        packet = MeshPacket(
+            conf,
+            nodes,
+            0,
+            NODENUM_BROADCAST,
+            0,
+            40,
+            1,
+            0,
+            True,
+            False,
+            None,
+            0,
+            {0: {1}, 1: {0}},
+            [[None, None], [None, None]],
+        )
+
+        rssi_full = packet.rssiAtN[1]
+        packet.set_tx_power(conf.PTX - 9)
+
+        self.assertAlmostEqual(rssi_full - packet.rssiAtN[1], 9.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()
